@@ -78,9 +78,7 @@ app.post('/submit-order', (req, res) => {
           // Step 4: Submit the order with the IPN ID stored
           const orderData = {
             id: uuidv4(),
-            currency: req.body.currency,
-            amount: req.body.amount,
-            description: req.body.description,
+           
             callback_url: callbackUrl,
             notification_id: ipnId,  // Store the ipn_id as notification_id
             billing_address: {
@@ -97,6 +95,9 @@ app.post('/submit-order', (req, res) => {
               postal_code: req.body.postal_code || '',
               zip_code: req.body.zip_code || '',
             },
+            currency: req.body.currency,
+            amount: req.body.amount,
+            description: req.body.description,
           };
 
           const optionsOrder = {
