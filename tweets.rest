@@ -1,2 +1,5 @@
-GET http://localhost:3000/api/tweets
+GET http://localhost:3000/tweets
+###
 
+GET https://leahinitiative-backend.onrender.com/api/tweets
+###

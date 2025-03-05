@@ -10,7 +10,13 @@ const app = express();
 app.use(express.json());
 
 // Enable CORS for all routes
-app.use(cors());
+app.use(
+  cors({
+    origin: "*", // Allow all domains (Change to your frontend domain for security)
+    methods: ["GET"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 const token = process.env.BEARER_TOKEN;
 const endpointUrl = "https://api.twitter.com/2/tweets/search/recent";
