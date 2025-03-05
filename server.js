@@ -82,7 +82,7 @@ async function getCachedTweets() {
       return tweetCache || { error: "Rate limit exceeded. Showing cached data." };
   }
 
-  return await fetchTweetsFromAPI();
+  return await getRequest();
 }
 
 // Endpoint to fetch tweets
