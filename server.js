@@ -9,6 +9,12 @@ const cors = require("cors"); // Import the cors package
 const app = express();
 app.use(express.json());
 
+let tweetCache = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+let retryInProgress = false;
+
+
 // Enable CORS for all routes
 app.use(
   cors({
@@ -28,6 +34,7 @@ async function getRequest() {
     "tweet.fields": "author_id",
   };
 
+  try{
   const res = await needle("get", endpointUrl, params, {
     headers: {
       "User-Agent": "v2RecentSearchJS",
@@ -35,21 +42,53 @@ async function getRequest() {
     },
   });
 
-  if (res.body) {
-    return res.body;
-  } else {
+  if (res.statusCode === 429) {
+    console.warn("⚠️ Rate limit exceeded! Retrying in 15 minutes...");
+    retryInProgress = true;
+    setTimeout(() => {
+        retryInProgress = false;
+        fetchTweetsFromAPI(); // Auto-retry after 15 mins
+    }, CACHE_DURATION);
+    return tweetCache || { error: "Rate limit exceeded. Showing cached data." };
+}
+
+if (res.body) {
+    tweetCache = res.body;
+    lastFetchTime = Date.now();
+    console.log("✅ Tweets updated in cache.");
+    return tweetCache;
+} else {
     throw new Error("Unsuccessful request");
+}
+  
+}catch (error) {
+  console.error("❌ Error fetching tweets:", error.message);
+  return tweetCache || { error: error.message };
+}
+}
+
+
+// Get cached tweets or fetch new ones
+async function getCachedTweets() {
+  const now = Date.now();
+
+  if (tweetCache && (now - lastFetchTime) < CACHE_DURATION) {
+      console.log("📌 Returning cached tweets...");
+      return tweetCache;
   }
+
+  if (retryInProgress) {
+      console.log("⏳ Waiting for retry...");
+      return tweetCache || { error: "Rate limit exceeded. Showing cached data." };
+  }
+
+  return await fetchTweetsFromAPI();
 }
 
 // Endpoint to fetch tweets
 app.get("/api/tweets", async (req, res) => {
-  try {
-    const tweets = await getRequest();
-    res.json(tweets);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  const tweets = await getCachedTweets();
+  res.json(tweets);
 });
 
 // Serve static files from the "public" directory
